@@ -5,6 +5,16 @@ Ask Alexa to get your Current Glucose Reading
 from __future__ import print_function
 import urllib2, urllib
 import json
+import boto3
+import os
+
+from base64 import b64decode
+
+ENCRYPTED = os.environ['password']
+# Decrypt code should run once and variables stored outside of the function
+# handler so that these are decrypted once per container
+DECRYPTED = boto3.client('kms').decrypt(CiphertextBlob=b64decode(ENCRYPTED))['Plaintext']
+
 
 # --------------- Helpers that build all of the responses ----------------------
 
@@ -36,13 +46,13 @@ def build_response(session_attributes, speechlet_response):
 def get_welcome_response():
     session_attributes = {}
     card_title = "Welcome"
-    speech_output = "Welcome to the Dexcom Glucose Skill. " \
+    speech_output = "Welcome to the ask Dex Skill. " \
                     "Please tell me you want me to read your glucose number by saying, " \
-                    "tell me my glucose or my glucose."
+                    "what's my b g or what's my number."
     # If the user either does not reply to the welcome message or says something
     # that is not understood, they will be prompted again with this text.
-    reprompt_text = "I did not understand. Please tell me you want me to read your glucose number by saying, " \
-                    "tell me my glucose or my glucose."
+    reprompt_text = "I did not understand. Please speak more clearly, saying something like " \
+                    "what's my b g or what's my number."
     should_end_session = False
     return build_response(session_attributes, build_speechlet_response(
         card_title, speech_output, should_end_session))
@@ -56,7 +66,7 @@ def handle_session_end_request():
         card_title, speech_output, None, should_end_session))
 
 
-def get_my_glucose_in_session(intent, session):
+def get_my_glucose_in_session(intent, session, pswd, current=True):
     card_title = intent['name']
     should_end_session = True
     method = "POST"
@@ -64,10 +74,10 @@ def get_my_glucose_in_session(intent, session):
     opener = urllib2.build_opener(handler)
     sessionIdUrl = 'https://share1.dexcom.com/ShareWebServices/Services/General/LoginPublisherAccountByName'
     glucoseUrl = 'https://share1.dexcom.com/ShareWebServices/Services/Publisher/ReadPublisherLatestGlucoseValues?sessionID='
-    glucoseGetParams = '&minutes=1440&maxCount=1'
-    payload ={"password": "YOUR_PASSWORD", "applicationId" : "d89443d2-327c-4a6f-89e5-496bbb0317db", "accountName": "YOUR_ACCOUNT_NAME"}
+    glucoseGetParams = '&minutes=1440&maxCount=5'
+    payload = {"applicationId" : "d89443d2-327c-4a6f-89e5-496bbb0317db", "accountName": "peterfoster", "password": pswd}
     seshRequest = urllib2.Request(sessionIdUrl, json.dumps(payload))
-    
+
     seshRequest.add_header("Content-Type",'application/json')
     seshRequest.add_header("User-Agent",'Dexcom Share/3.0.2.11 CFNetwork/672.0.2 Darwin/14.0.0')
     seshRequest.add_header("Accept",'application/json')
@@ -100,8 +110,9 @@ def get_my_glucose_in_session(intent, session):
     if connection2.code == 200:
         glucoseReading = connection2.read()
         glucoseReading = json.loads(glucoseReading)
-        glucose = glucoseReading[0]["Value"]
-        trend = glucoseReading[0]["Trend"]
+        bg_event = 0 if current else -1
+        glucose = glucoseReading[bg_event]["Value"]
+        trend = glucoseReading[bg_event]["Trend"]
         
     else:
         print(connection2.code)
@@ -127,7 +138,9 @@ def get_my_glucose_in_session(intent, session):
     if trend == 9:
         trendtext = "trend unavailable"
         
-    speech_output = "Your glucose is " + str(glucose) + "and " + str(trendtext)
+    speech_output = "Your glucose is " + str(glucose) + " and " + str(trendtext)
+    if not current:
+        speech_output = "Twenty minutes ago your glucose was " + str(glucose) + " and " + str(trendtext)
    
     return build_response({},build_speechlet_response(
         card_title, speech_output, should_end_session))
@@ -162,7 +175,9 @@ def on_intent(intent_request, session):
 
     # Dispatch to your skill's intent handlers
     if intent_name == "GetGlucoseNow":
-        return get_my_glucose_in_session(intent, session)
+        return get_my_glucose_in_session(intent, session, DECRYPTED)
+    elif intent_name == "GetGlucoseOld":
+        return get_my_glucose_in_session(intent, session, DECRYPTED, current=False)
     elif intent_name == "AMAZON.HelpIntent":
         return get_welcome_response()
     elif intent_name == "AMAZON.CancelIntent" or intent_name == "AMAZON.StopIntent":
@@ -191,9 +206,9 @@ def lambda_handler(event, context):
     prevent someone else from configuring a skill that sends requests to this
     function.
     """
-    # if (event['session']['application']['applicationId'] !=
-    #         "amzn1.echo-sdk-ams.app.[unique-value-here]"):
-    #     raise ValueError("Invalid Application ID")
+    if (event['session']['application']['applicationId'] !=
+         "amzn1.ask.skill.9b7571e1-da98-4188-94e3-f0ef991694d6"):
+        raise ValueError("Invalid Application ID")
 
     if event['session']['new']:
         on_session_started({'requestId': event['request']['requestId']},
