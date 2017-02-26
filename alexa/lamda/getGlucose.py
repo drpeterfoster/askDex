@@ -1,5 +1,5 @@
 """
-Ask Alexa to get your Current Glucose Reading
+Ask Alexa to get your Current and Historcal (20 mins) Glucose Reading
 """
 
 from __future__ import print_function
@@ -10,10 +10,10 @@ import os
 
 from base64 import b64decode
 
-ENCRYPTED = os.environ['password']
 # Decrypt code should run once and variables stored outside of the function
 # handler so that these are decrypted once per container
-DECRYPTED = boto3.client('kms').decrypt(CiphertextBlob=b64decode(ENCRYPTED))['Plaintext']
+DECRYPTED = {'password': boto3.client('kms').decrypt(CiphertextBlob=b64decode(os.environ['password']))['Plaintext'],
+             'userid': boto3.client('kms').decrypt(CiphertextBlob=b64decode(os.environ['userid']))['Plaintext']}
 
 
 # --------------- Helpers that build all of the responses ----------------------
@@ -66,7 +66,7 @@ def handle_session_end_request():
         card_title, speech_output, None, should_end_session))
 
 
-def get_my_glucose_in_session(intent, session, pswd, current=True):
+def get_my_glucose_in_session(intent, session, login, current=True):
     card_title = intent['name']
     should_end_session = True
     method = "POST"
@@ -75,7 +75,7 @@ def get_my_glucose_in_session(intent, session, pswd, current=True):
     sessionIdUrl = 'https://share1.dexcom.com/ShareWebServices/Services/General/LoginPublisherAccountByName'
     glucoseUrl = 'https://share1.dexcom.com/ShareWebServices/Services/Publisher/ReadPublisherLatestGlucoseValues?sessionID='
     glucoseGetParams = '&minutes=1440&maxCount=5'
-    payload = {"applicationId" : "d89443d2-327c-4a6f-89e5-496bbb0317db", "accountName": "peterfoster", "password": pswd}
+    payload = {"applicationId" : "d89443d2-327c-4a6f-89e5-496bbb0317db", "accountName": login['userid'], "password": login['password']}
     seshRequest = urllib2.Request(sessionIdUrl, json.dumps(payload))
 
     seshRequest.add_header("Content-Type",'application/json')
