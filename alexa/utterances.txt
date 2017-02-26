@@ -1,4 +1,20 @@
-GetGlucoseNow what is my glucose reading
-GetGlucoseNow tell me my glucose 
-GetGlucoseNow my glucose
-GetGlucoseNow glucose 
+GetGlucoseNow for aprils b g 
+GetGlucoseNow for my b g 
+GetGlucoseNow for aprils number
+GetGlucoseNow for my number
+GetGlucoseNow whats aprils b g
+GetGlucoseNow whats aprils number
+
+GetGlucoseOld for aprils previous b g 
+GetGlucoseOld for my previous b g 
+GetGlucoseOld for aprils previous number
+GetGlucoseOld for my previous number
+GetGlucoseOld whats aprils previous b g
+GetGlucoseOld whats aprils previous number
+
+GetGlucoseOld for aprils old b g 
+GetGlucoseOld for my old b g 
+GetGlucoseOld for aprils old number
+GetGlucoseOld for my old number
+GetGlucoseOld whats aprils old b g
+GetGlucoseOld whats aprils old number

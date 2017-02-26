@@ -2,6 +2,9 @@
   "intents": [
     {
       "intent": "GetGlucoseNow"
+    },
+    {
+      "intent": "GetGlucoseOld"
     }
   ]
 }
