@@ -113,6 +113,12 @@ def get_my_glucose_in_session(intent, session, login, current=True):
         bg_event = 0 if current else -1
         glucose = glucoseReading[bg_event]["Value"]
         trend = glucoseReading[bg_event]["Trend"]
+        time = (datetime
+                .datetime
+                .fromtimestamp(int(glucoseReading[bg_event]['WT'][6:-2])/1000)) \
+                + datetime.timedelta(hours=6)
+        time = time.strftime('%I:%M')
+        print(glucoseReading)
         
     else:
         print(connection2.code)
@@ -138,9 +144,9 @@ def get_my_glucose_in_session(intent, session, login, current=True):
     if trend == 9:
         trendtext = "trend unavailable"
         
-    speech_output = "Your glucose is " + str(glucose) + " and " + str(trendtext)
+    speech_output = "Your glucose was %s and %s at %s" % (glucose, trendtext, time)
     if not current:
-        speech_output = "Twenty minutes ago your glucose was " + str(glucose) + " and " + str(trendtext)
+        speech_output = "At %s, your glucose was %s and %s" % (time, glucose, trendtext)
    
     return build_response({},build_speechlet_response(
         card_title, speech_output, should_end_session))
