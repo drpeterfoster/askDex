@@ -144,7 +144,7 @@ def get_my_glucose_in_session(intent, session, login, current=True):
     if trend == 9:
         trendtext = "trend unavailable"
         
-    speech_output = "Your glucose was %s and %s at %s" % (glucose, trendtext, time)
+    speech_output = "At %s, your glucose was %s and %s." % (time, glucose, trendtext)
     if not current:
         speech_output = "At %s, your glucose was %s and %s" % (time, glucose, trendtext)
    
